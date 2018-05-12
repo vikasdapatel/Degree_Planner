@@ -1,18 +1,203 @@
-<ion-header>
+<ion-header class="home-header">
   <ion-navbar>
     <button ion-button menuToggle>
       <ion-icon name="menu"></ion-icon>
     </button>
-    <ion-title>Home</ion-title>
+    <ion-title text-center class="home-header-title">{{homePageObj.CGPA}} CGPA</ion-title>
+  </ion-navbar>
+  <ion-navbar >
+    <ion-row class="home-header-graph">
+      <ion-col col-6 class="home-sgpa_txt">
+        <!-- <button  color="light">Target {{homePageObj.semesters[homePageObj.currentSem - 1].sem_target_sgpa}}</button> -->
+        <div class="showIncDecr">
+          <span>{{homePageObj.marks_margin}}</span>
+           <ion-icon *ngIf="homePageObj.marks_margin < 0" class="home-subject_save_redIcon" name="arrow-round-down"></ion-icon>
+          <ion-icon *ngIf="homePageObj.marks_margin > 0" class="home-subject_save_blueIcon" name="arrow-round-up"></ion-icon>
+          <ion-icon class="home-subject_save_rightIcon" *ngIf="homePageObj.marks_margin === 0" name="checkmark"></ion-icon>
+        </div>        
+        <section class="chart-wrapper">
+            <canvas class="simulation-content-canvas"  width="100" height="100" #doughnutChart></canvas>
+        </section>
+      </ion-col>
+      <ion-col col-6 class="home-sgpa_txt">
+        <div class="home-sgpa_txt_right"><span class="right-colorTarget">{{homePageObj.semesters[homePageObj.currentSem - 1].sem_target_sgpa}}</span> Target </div>
+        <div class="home-sgpa_txt_right"><span class="increaseright-colorAchivement">{{homePageObj.semesters[homePageObj.currentSem - 1].sem_sgpa}}</span> Achivement </div>
+      </ion-col>
+    </ion-row>
+  </ion-navbar>
+  <ion-navbar>
+    <ion-row class="home-header-sgpa">
+      <ion-col col-2>
+        <button>
+          <ion-icon (click)="decreaseSem()" *ngIf="homePageObj.currentSem > 1" class="home-sgpa-arrow-back" name="arrow-back"></ion-icon>  
+        </button>
+      </ion-col>
+      <ion-col col-8 class="home-sgpa_txt">
+        <button class="home-sgpa-button" color="light"><!-- {{homePageObj.semesters[homePageObj.currentSem - 1].sem_sgpa}} -  -->{{homePageObj.semesters[homePageObj.currentSem-1].sem_name}}</button>
+      </ion-col>
+      <ion-col col-2>
+        <button>
+         <ion-icon (click)="increaseSem()" *ngIf="homePageObj.currentSem < 8" class="home-sgpa-arrow-forward" name="arrow-forward"></ion-icon> 
+        </button>
+      </ion-col>
+    </ion-row>
   </ion-navbar>
 </ion-header>
 
-<ion-content padding>
-  <h3>Ionic Menu Starter</h3>
-
-  <p>
-    If you get lost, the <a href="http://ionicframework.com/docs/v2">docs</a> will show you the way.
-  </p>
-
-  <button ion-button secondary menuToggle>Toggle Menu</button>
+<ion-content  class="home-content">
+    <!-- theory txt -->
+  <ion-list>
+    <ion-item class="home-subjectList_theory_txt">
+      <ion-row>
+        <ion-col col-6 class="home-subjectList_theory_txt-col">
+          Theory
+          <div class="home-subjectList_theory_txt-number">{{this.homePageObj.semesters[this.homePageObj.currentSem -1 ].subjectList_theory.length}}
+          </div>
+        </ion-col>
+        <ion-col text-right col-6>
+            <ion-icon (click)="addTheorySubject()" class="home-row-add-icon" name="add"></ion-icon>
+            <!-- <button (click)="addTheorySubject()" ion-button>Add Theory</button> -->
+        </ion-col>
+      </ion-row>
+    </ion-item>
+    <!-- header -->
+    <ion-item class="home-subjectList_header_txt">
+      <ion-row>
+        <ion-col col-5 class="home-subjectList_theory_txt-col">
+          Subjects
+        </ion-col>
+        <ion-col col-3 class="home-subjectList_theory_txt-col">
+          Target
+        </ion-col>
+        <ion-col col-3 class="home-subjectList_theory_txt-col">
+          Actual
+        </ion-col>
+      </ion-row>
+    </ion-item>
+    <ion-item-sliding class="home-item-slide-subjectList_theory" *ngFor="let subject of homePageObj.semesters[this.homePageObj.currentSem - 1].subjectList_theory; let i = index">
+      <ion-item class="home-subjectList_theory" >
+         <ion-row>
+          <ion-col col-5 class="home-subject_name">
+            <input type="text" (keypress)="eventHandler($event.keyCode)" placeholder="Subject" [(ngModel)]="subject['subject']">
+          </ion-col>
+           <ion-col col-3 class="home-subject_grade">
+            <ion-item class="home-subject_grade_item">
+             <ion-select [(ngModel)]="subject['target']" (ngModelChange)="subject['state'] =  false; getSelectedData('target')" class="home-subject_grade_item_select">
+                <ion-option  *ngFor="let grade of homePageObj.grades; let j = index;">{{grade.grade }}</ion-option>
+              </ion-select>
+            </ion-item>
+          </ion-col>
+          <ion-col col-3 class="home-subject_grade">
+            <ion-item class="home-subject_grade_item">
+             <ion-select [(ngModel)]="subject['grade']" (ngModelChange)="subject['state'] =  false;getSelectedData('grade')" class="home-subject_grade_item_select">
+                <ion-option  *ngFor="let grade of homePageObj.grades; let j = index;">{{grade.grade }}</ion-option>
+              </ion-select>
+            </ion-item>
+          </ion-col>
+          <ion-col col-1 class="home-subject_save">
+              <span *ngIf="checkArrowStatus(subject.sub_rating) !== 'stable'" >{{subject.sub_rating}}</span>
+               <ion-icon *ngIf="checkArrowStatus(subject.sub_rating) === 'decrease'" class="home-subject_save_redIcon" name="arrow-round-down"></ion-icon>
+              <ion-icon *ngIf="checkArrowStatus(subject.sub_rating) === 'increase'" class="home-subject_save_blueIcon" name="arrow-round-up"></ion-icon>
+              <ion-icon class="home-subject_save_rightIcon" *ngIf="checkArrowStatus(subject.sub_rating) === 'stable'" name="checkmark"></ion-icon>
+            <!-- <ion-item class="home-subject_save_item">
+              <ion-checkbox class="home-subject_save_checkbox" color="danger" [(ngModel)]="subject['state']" (ngModelChange)="getSelectedData()"></ion-checkbox>
+            </ion-item> -->
+          </ion-col>
+        </ion-row>
+      </ion-item>
+      <ion-item-options class="home-item-slide-option-subjectList_theory" side="right">
+        <button ion-button color="primary" (click)="removeTheorySubject(i)">
+          <ion-icon  md="md-trash" ios="ios-trash" class="home-row-remove-icon" ></ion-icon> Remove
+        </button>
+      </ion-item-options>  
+    </ion-item-sliding>
+  </ion-list>
+  <ion-list>
+    <ion-item class="home-subjectList_practical_txt">
+      <ion-row>
+        <ion-col class="home-subjectList_practical_txt-col" col-6>
+          Practical
+          <div class="home-subjectList_practical_txt-number">{{this.homePageObj.semesters[this.homePageObj.currentSem - 1].subjectList_practical.length}}
+          </div>
+        </ion-col>
+        <ion-col text-right col-6>
+            <ion-icon (click)="addPracticalSubject()" class="home-row-add-icon" name="add"></ion-icon>
+            <!-- <button (click)="addPracticalSubject()" ion-button>Add Practical</button> -->
+        </ion-col>
+      </ion-row>
+    </ion-item>
+    <!-- header -->
+    <ion-item class="home-subjectList_header_txt">
+      <ion-row>
+        <ion-col col-3 class="home-subjectList_theory_txt-col">
+          Subjects
+        </ion-col>
+        <ion-col col-3 class="home-subjectList_theory_txt-col">
+          Target
+        </ion-col>
+        <ion-col col-2 class="home-subjectList_theory_txt-col">
+          Credit
+        </ion-col>
+        <ion-col col-3 class="home-subjectList_theory_txt-col">
+          Actual
+        </ion-col>
+      </ion-row>
+    </ion-item>
+    <ion-item-sliding class="home-item-slide-subjectList_practical" *ngFor="let subject of this.homePageObj.semesters[this.homePageObj.currentSem - 1].subjectList_practical; let i = index">
+      <ion-item class="home-subjectList_practical" >
+        <ion-row>
+          <ion-col col-3 class="home-subject_name">
+            <input type="text" (keypress)="eventHandler($event.keyCode)" placeholder="Subject" [(ngModel)]="subject['subject']">
+          </ion-col>
+          <!-- for target -->
+          <ion-col col-3 class="home-subject_credit">
+            <ion-item class="home-subject_credit_item">
+             <ion-select [(ngModel)]="subject['target']" (ngModelChange)="subject['state'] =  false;getSelectedData('target')" class="home-subject_credit_item_select">
+                <ion-option  *ngFor="let grade of homePageObj.grades; let j = index;">{{grade.grade }}</ion-option>
+              </ion-select>
+            </ion-item>
+          </ion-col>
+           <!-- for credit -->
+          <ion-col col-2 class="home-subject_credit">
+            <ion-item class="home-subject_credit_item">
+             <ion-select [(ngModel)]="subject['credit']" (ngModelChange)="subject['state'] =  false;getSelectedData('target');getSelectedData('grade')" class="home-subject_credit_item_select">
+                <ion-option  *ngFor="let credit of homePageObj.credits; let j = index;">{{credit }}</ion-option>
+              </ion-select>
+            </ion-item>
+          </ion-col>
+          <!-- End For credit -->
+          <ion-col col-3 class="home-subject_grade">
+            <ion-item class="home-subject_grade_item">
+              <ion-select [(ngModel)]="subject['grade']" (ngModelChange)="subject['state'] =  false;getSelectedData('grade')" class="home-subject_grade_item_select">
+                <ion-option (ngValue)="j" *ngFor="let grade of homePageObj.grades; let j = index;">{{grade.grade}}</ion-option>
+              </ion-select>
+            </ion-item>
+          </ion-col>
+          <ion-col col-1 class="home-subject_save">
+          <span *ngIf="checkArrowStatus(subject.sub_rating) !== 'stable'" >{{subject.sub_rating}}</span>
+          <ion-icon *ngIf="checkArrowStatus(subject.sub_rating) === 'decrease'" class="home-subject_save_redIcon" name="arrow-round-down"></ion-icon>
+              <ion-icon *ngIf="checkArrowStatus(subject.sub_rating) === 'increase'" class="home-subject_save_blueIcon" name="arrow-round-up"></ion-icon>
+              <ion-icon class="home-subject_save_rightIcon" *ngIf="checkArrowStatus(subject.sub_rating) === 'stable'" name="checkmark"></ion-icon>
+           <!--  <ion-item class="home-subject_save_item">
+              <ion-checkbox class="home-subject_save_checkbox" color="danger" [(ngModel)]="subject['state']" (ngModelChange)="getSelectedData()"></ion-checkbox>
+            </ion-item> -->
+          </ion-col>
+        </ion-row>
+      </ion-item>
+      <ion-item-options class="home-item-slide-option-subjectList_practical" side="right">
+        <button ion-button color="primary" (click)="removePracticalSubject(i)">
+          <ion-icon  md="md-trash" ios="ios-trash" class="home-row-remove-icon" ></ion-icon> Remove
+        </button>
+      </ion-item-options>
+    </ion-item-sliding>
+  </ion-list>
+  <ion-fab right bottom *ngIf="homePageObj.isSimulationButtonShow">
+    <!-- <button ion-fab color="secondary" (click)="gotoSimulation()"><ion-icon ios="ios-analytics" md="md-analytics"></ion-icon></button> -->
+    <button ion-fab color="secondary" (click)="AddTarget()"><ion-icon ios="ios-add" md="md-add"></ion-icon></button>
+  </ion-fab>
+  <!-- <ion-row class="home-row-addsubject">
+    <button ion-button round (click)="addTheorySubject()">
+      <ion-icon class="home-row-add-icon" name="add"></ion-icon>
+    </button>
+  </ion-row> -->
 </ion-content>
